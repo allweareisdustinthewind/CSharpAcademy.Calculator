@@ -7,4 +7,14 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="CalculatorLibrary\**" />
+    <EmbeddedResource Remove="CalculatorLibrary\**" />
+    <None Remove="CalculatorLibrary\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="CalculatorLibrary\CalculatorLibrary.csproj" />
+  </ItemGroup>
+
 </Project>
