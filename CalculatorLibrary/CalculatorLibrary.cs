@@ -1,77 +1,104 @@
-﻿using System.Diagnostics;
-using Newtonsoft.Json;
+﻿using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
 
 namespace CalculatorLibrary
 {
    public class Calculator
    {
-      JsonWriter writer;
+      public Log CalcLog { get; set; } = new ();
 
       public Calculator ()
       {
-         StreamWriter logFile = File.CreateText ("calculatorlog.json");
-         logFile.AutoFlush = true;
+         CalcLog.Load ();
 
-         writer = new JsonTextWriter (logFile);
-         writer.Formatting = Formatting.Indented;
-         writer.WriteStartObject ();
-         writer.WritePropertyName ("Operations");
-         writer.WriteStartArray ();
+         ++CalcLog.UsedCount;
+         CalcLog.Save ();
       }
 
-      public double DoOperation (double num1, double num2, string op)
+      public string DoOperation (double num1, double num2, string op)
       {
-         double result = double.NaN; // Default value is "not-a-number" if an operation, such as division, could result in an error.
+         double val = double.NaN;
 
-         writer.WriteStartObject ();
-         writer.WritePropertyName ("Operand1");
-         writer.WriteValue (num1);
-         writer.WritePropertyName ("Operand2");
-         writer.WriteValue (num2);
-         writer.WritePropertyName ("Operation");
-
-         // Use a switch statement to do the math.
          switch (op)
          {
             case "a":
-               result = num1 + num2;
-               writer.WriteValue ("Add");
+               val = num1 + num2;
                break;
 
             case "s":
-               result = num1 - num2;
-               writer.WriteValue ("Subtract");
+               val = num1 - num2;
                break;
 
             case "m":
-               result = num1 * num2;
-               writer.WriteValue ("Multiply");
+               val = num1 * num2;
                break;
 
             case "d":
-               // Ask the user to enter a non-zero divisor.
                if (num2 != 0)
-                  result = num1 / num2;
-               writer.WriteValue ("Divide");
+                  val = num1 / num2;
                break;
 
-            // Return text for an incorrect option entry.
-            default:
+            case "sqrt":
+               val = Math.Sqrt (num1);
+               break;
+
+            case "pow":
+               if (num1 != 0 || num2 != 0)
+                  val = Math.Pow (num1, num2);
+
+               break;
+
+            case "10":
+               val = Math.Pow (10, num1);
+               break;
+
+            case "e":
+               val = Math.Exp (num1);
+               break;
+
+            case "sin":
+               val = Math.Sin (ToRadian (num1));
+               break;
+
+            case "cos":
+               val = Math.Cos (ToRadian (num1));
+               break;
+
+            case "tg":
+               num1 = Reduce (num1);
+               if (Math.Abs (num1) != 90)
+                  val = Math.Tan (ToRadian (num1));
+               break;
+
+            case "ctg":
+               num1 = Reduce (num1);
+               if (Math.Abs (num1) != 0)
+                  val = 1.0 / Math.Tan (ToRadian (num1));
                break;
          }
 
-         writer.WritePropertyName ("Result");
-         writer.WriteValue (result);
-         writer.WriteEndObject ();
+         if (double.IsNaN (val) || val == double.NegativeInfinity || val == double.PositiveInfinity)
+            return string.Empty;
 
-         return result;
+
+         return string.Format ("{0:0.##}", val);
       }
 
-      public void Finish ()
+      double ToRadian (double degree)
       {
-         writer.WriteEndArray ();
-         writer.WriteEndObject ();
-         writer.Close ();
+         return degree * Math.PI / 180.0;
+      }
+
+      double Reduce (double degree)
+      {
+         //if (degree > 180)
+         //   degree -= ((int) degree / 180) * 180;
+         //else if (degree < -180)
+         //   degree += ((int) degree / (-180)) * 180;
+
+         //return degree;
+
+         return degree % 180;
       }
    }
 }
