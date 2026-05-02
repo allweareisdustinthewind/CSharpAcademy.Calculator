@@ -20,6 +20,7 @@ namespace ProgramLogic
       double _num1 = double.NaN;
       double _num2 = double.NaN;
       string _operation = string.Empty;
+      string? _resCalculation; 
 
       Calculator _calculator = new ();
 
@@ -49,6 +50,9 @@ namespace ProgramLogic
          if (!ProcessGetOperand (op))
             return;
 
+         if (Math.Abs (_num1) == 0)
+            _num1 = 0;
+
          FormatResult ();
 
          _currentState = GetOperation;
@@ -60,6 +64,7 @@ namespace ProgramLogic
 
          ShowTitle ();
          ShowOperations ();
+         FormatResult ();
 
          _operation = GetUserInput (["a", "s", "m", "d", "sqrt", "pow", "10", "e", "sin", "cos", "tg", "ctg"], out double val);
          FormatResult ();
@@ -80,6 +85,9 @@ namespace ProgramLogic
          if (!ProcessGetOperand (op, false))
             return;
 
+         if (Math.Abs (_num2) == 0)
+            _num2 = 0;
+
          FormatResult ();
 
          _currentState = DoCalculation;
@@ -87,8 +95,8 @@ namespace ProgramLogic
 
       void DoCalculation ()
       {
-         string res = _calculator.DoOperation (_num1, _num2, _operation);
-         if (string.IsNullOrEmpty (res))
+         _resCalculation = _calculator.DoOperation (_num1, _num2, _operation);
+         if (string.IsNullOrEmpty (_resCalculation))
          {
             Gui.Notify ("This operation will result in a mathematical error.");
 
@@ -100,24 +108,30 @@ namespace ProgramLogic
             return;
          }
 
-         _calculator.CalcLog.AddInfo (_result!, res);
-         _result += $" = {res}";
+         _calculator.CalcLog.AddInfo (_result!, _resCalculation);
 
-         UpdateResult ();
+         FormatResult ();
 
          _currentState = AskToContinue;
       }
 
       void AskToContinue ()
       {
+         ShowTitle ();
+
          Console.CursorVisible = false;
-         Console.WriteLine ("\n  Press 'e' to exit the application, or press any other key to continue.");
+         Console.WriteLine ("\nPress 'e' to exit the application, or press any other key to continue.");
          if (Console.ReadKey (true).Key == ConsoleKey.E)
             _currentState = null;
          else
          {
             Console.CursorVisible = true;
             _currentState = GetFirstOperand;
+
+            _num1 = double.NaN;
+            _num2 = double.NaN;
+            _operation = string.Empty;
+            _resCalculation = string.Empty;
          }
       }
 
@@ -265,15 +279,17 @@ namespace ProgramLogic
                   return false;
 
                case "u":
-                  _result += string.Format ("{0:0.##}", val);
+                  _result += string.Format ("{0:0.######}", val);
                   if (isFirstOperand)
                      _num1 = val;
                   else
                      _num2 = val;
 
                   UpdateResult ();
-
                   break;
+
+               default:
+                  return false;
             }
          }
 
@@ -282,7 +298,13 @@ namespace ProgramLogic
 
       void FormatResult ()
       {
-         _result = string.Format ("{0:0.##}", _num1);
+         if (_result?.Length > 0)
+         {
+            _result = new string (' ', _result.Length);
+            UpdateResult ();
+         }
+
+         _result = string.Format ("{0:0.######}", _num1);
 
          switch (_operation)
          {
@@ -311,11 +333,17 @@ namespace ProgramLogic
                break;
 
             case "10":
-               _result = $"10 ^ {_result}";
+               if (_num1 < 0)
+                  _result = $"10 ^ ({_result})";
+               else
+                  _result = $"10 ^ {_result}";
                break;
 
             case "e":
-               _result = $"e ^ {_result}";
+               if (_num1 < 0)
+                  _result = $"e ^ ({_result})";
+               else
+                  _result = $"e ^ {_result}";
                break;
 
             case "sin":
@@ -336,7 +364,15 @@ namespace ProgramLogic
          }
 
          if (!double.IsNaN (_num2))
-            _result += string.Format ("{0:0.##}", _num2);
+         {
+            if (_num2 < 0)
+               _result += string.Format ("({0:0.######})", _num2);
+            else
+               _result += string.Format ("{0:0.######}", _num2);
+         }
+
+         if (!string.IsNullOrEmpty (_resCalculation))
+            _result += $" = {_resCalculation}";
 
          UpdateResult ();
       }

@@ -65,5 +65,17 @@ namespace CalculatorLibrary
          Calculations.Add (new (input, result));
          Save ();
       }
+
+      public void Delete (int index)
+      {
+         Calculations.RemoveAt (index);
+         Save ();
+      }
+
+      public void Reset ()
+      {
+         Calculations.Clear ();
+         Save ();
+      }
    }
 }

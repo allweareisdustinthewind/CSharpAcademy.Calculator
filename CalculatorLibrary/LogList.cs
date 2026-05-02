@@ -1,4 +1,7 @@
-﻿namespace CalculatorLibrary
+﻿using System.ComponentModel.DataAnnotations;
+using System.Data;
+
+namespace CalculatorLibrary
 {
    public class CalcLine
    {
@@ -13,6 +16,12 @@
          PosX = posX;
          PosY = posY;
          Text = text;
+      }
+
+      public void Display ()
+      {
+         Console.SetCursorPosition (PosX, PosY);
+         Console.Write (Text);
       }
 
       public void Select ()
@@ -42,6 +51,12 @@
       List<CalcLine> _lines = new ();
 
       int _selectedItem;
+      int _indexFrom;
+      int _posYMin;
+      int _posYMax;
+
+      readonly int _maxLineCount = 8;
+      readonly int _maxWidth = 40;
 
       public LogList (Log log)
       {
@@ -60,30 +75,34 @@
 
          _lines.Clear ();
 
-         const int maxLineCount = 8;
-         const int maxWidth = 40;
-         string line = new ('─', maxWidth);
+         string line = new ('─', _maxWidth);
          string indent = "       ";
          Console.WriteLine ("                   Previous calculations");
          Console.WriteLine ("{0}┌{1}┐", indent, line);
 
-         for (int i = 0; i < maxLineCount; ++i)
-         {
-            string text;
-            if (i < _log.Calculations.Count)
-            {
-               var data = _log.Calculations [i];
-               text = $" {data.Input} = {data.Result}";
-               text = text.PadRight (maxWidth, ' ');
+         var (x, y) = Console.GetCursorPosition ();
+         x += indent.Length + 1;
+         _posYMin = y;
+         _posYMax = y + _maxLineCount;
 
-               var (x, y) = Console.GetCursorPosition ();
-               _lines.Add (new (x + indent.Length + 1, y, text));
+         string text = string.Empty;
+         foreach (var data in _log.Calculations)
+         { 
+            text = $" {data.Input} = {data.Result}";
+            if (text.Length > _maxWidth)
+            {
+               string subText = text.Substring (0, _maxWidth - 3);
+               text = subText + "...";
             }
             else
-               text = new (' ', maxWidth);
+               text = text.PadRight (_maxWidth, ' ');
 
-            Console.WriteLine ($"{indent}│{text}│");
+            _lines.Add (new (x, y++, text));
          }
+
+         text = new (' ', _maxWidth);
+         for (int i = 0; i < _maxLineCount; ++i)
+            Console.WriteLine ($"{indent}│{text}│");
 
          Console.WriteLine ("{0}└{1}┘\n", indent, line);
 
@@ -110,6 +129,7 @@
                Console.WriteLine ();
          }
 
+         Fill ();
          SelectItem ();
 
          Console.CursorVisible = false;
@@ -118,6 +138,34 @@
          Console.CursorVisible = true;
          return command;
       }
+
+      void Fill ()
+      {
+         if (_lines.Count <= 0)
+            return;
+
+         int count = 0;
+         int x = _lines [_indexFrom].PosX;
+         int y = _lines [_indexFrom].PosY;
+
+         for (int i = _indexFrom; i < _lines.Count; ++i, ++y)
+         {
+            _lines [i].Display ();
+            if (++count >= _maxLineCount)
+               break;
+         }
+
+         if (count >= _maxLineCount)
+            return;
+
+         string text = new (' ', _maxWidth);
+         for (;  count <= _maxLineCount - 1; ++count, ++y)
+         {
+            Console.SetCursorPosition (x, y);
+            Console.Write (text);
+         }
+      }
+
 
       string DoMenu (out double val)
       {
@@ -154,6 +202,17 @@
                case ConsoleKey.Enter:
                   val = double.Parse (_log.Calculations [_selectedItem].Result);
                   return "u";
+
+               case ConsoleKey.Delete:
+                  Delete ();
+                  if (_lines.Count <= 0)
+                     return "r";
+
+                  break;
+
+               case ConsoleKey.R:
+                  Reset ();
+                  return "r";
             }
          }
       }
@@ -175,7 +234,8 @@
 
          DeselectItem ();
 
-         --_selectedItem;
+         if (_lines [--_selectedItem].PosY < _posYMin)
+            ScrollDown ();
 
          SelectItem ();
 
@@ -188,17 +248,84 @@
 
          DeselectItem ();
 
-         ++_selectedItem;
+         if (_lines [++_selectedItem].PosY >= _posYMax)
+            ScrollUp ();
 
          SelectItem ();
       }
 
       void SelectFirstItem ()
       {
+         if (_lines.Count > _maxLineCount)
+         {
+            int y = _posYMin;
+
+            foreach (var data in _lines)
+               data.PosY = y++;
+         }
+
+         _selectedItem = 0;
+         _indexFrom = 0;
+
+         Fill ();
+         SelectItem ();
       }
 
       void SelectLastItem ()
       {
+         if (_lines.Count > _maxLineCount)
+         {
+            int y = _posYMax - 1;
+            for (int i = _lines.Count - 1; i >= 0; --i)
+               _lines [i].PosY = y--;
+
+            _indexFrom = _lines.Count - _maxLineCount;
+         }
+
+         _selectedItem = _lines.Count - 1;
+
+         Fill ();
+         SelectItem ();
+      }
+
+      void ScrollUp ()
+      {
+         ++_indexFrom;
+         foreach (var data in _lines)
+            --data.PosY;
+
+         Fill ();
+      }
+
+      void ScrollDown ()
+      {
+         --_indexFrom;
+
+         foreach (var data in _lines)
+            ++data.PosY;
+
+         Fill ();
+      }
+
+      void Delete ()
+      {
+         for (int i = _selectedItem + 1; i < _lines.Count; ++i)
+            --_lines [i].PosY;
+
+         _lines.RemoveAt (_selectedItem);
+         _log.Delete (_selectedItem);
+
+         if (_selectedItem >= _lines.Count)
+            _selectedItem = _lines.Count - 1;
+
+         Fill ();
+         SelectItem ();
+      }
+
+      void Reset ()
+      {
+         _lines.Clear ();
+         _log.Reset ();
       }
    }
 }

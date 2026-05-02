@@ -80,8 +80,11 @@ namespace CalculatorLibrary
          if (double.IsNaN (val) || val == double.NegativeInfinity || val == double.PositiveInfinity)
             return string.Empty;
 
+         // To prevent '-0' in result
+         if (Math.Abs (val) == 0)
+            val = 0;
 
-         return string.Format ("{0:0.##}", val);
+         return string.Format ("{0:0.######}", val);
       }
 
       double ToRadian (double degree)
