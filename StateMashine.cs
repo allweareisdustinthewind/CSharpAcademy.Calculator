@@ -7,7 +7,7 @@ namespace ProgramLogic
    public class StateMashine
    {
       delegate void State ();
-      State? _currentState;
+      State? _nextState;
 
       int _calcPosX;
       int _calcPosY;
@@ -26,15 +26,15 @@ namespace ProgramLogic
 
       public StateMashine ()
       {
-         _currentState = GetFirstOperand;
+         _nextState = GetFirstOperand;
       }
 
       public bool ProcessCurrentState ()
       {
-         if (_currentState == null)
+         if (_nextState == null)
             return false;
 
-         _currentState ();
+         _nextState ();
          return true;
       }
 
@@ -55,7 +55,7 @@ namespace ProgramLogic
 
          FormatResult ();
 
-         _currentState = GetOperation;
+         _nextState = GetOperation;
       }
 
       void GetOperation ()
@@ -70,9 +70,9 @@ namespace ProgramLogic
          FormatResult ();
 
          if (IsOperationNeedSecondOperand ())
-            _currentState = GetSecondOperand;
+            _nextState = GetSecondOperand;
          else
-            _currentState = DoCalculation;
+            _nextState = DoCalculation;
       }
 
       void GetSecondOperand ()
@@ -90,7 +90,7 @@ namespace ProgramLogic
 
          FormatResult ();
 
-         _currentState = DoCalculation;
+         _nextState = DoCalculation;
       }
 
       void DoCalculation ()
@@ -101,9 +101,9 @@ namespace ProgramLogic
             Gui.Notify ("This operation will result in a mathematical error.");
 
             if (IsOperationNeedSecondOperand ())
-               _currentState = GetSecondOperand;
+               _nextState = GetSecondOperand;
             else
-               _currentState = GetOperation;
+               _nextState = GetOperation;
 
             return;
          }
@@ -112,7 +112,7 @@ namespace ProgramLogic
 
          FormatResult ();
 
-         _currentState = AskToContinue;
+         _nextState = AskToContinue;
       }
 
       void AskToContinue ()
@@ -122,11 +122,11 @@ namespace ProgramLogic
          Console.CursorVisible = false;
          Console.WriteLine ("\nPress 'e' to exit the application, or press any other key to continue.");
          if (Console.ReadKey (true).Key == ConsoleKey.E)
-            _currentState = null;
+            _nextState = null;
          else
          {
             Console.CursorVisible = true;
-            _currentState = GetFirstOperand;
+            _nextState = GetFirstOperand;
 
             _num1 = double.NaN;
             _num2 = double.NaN;
@@ -256,7 +256,7 @@ namespace ProgramLogic
       {
          if (op == "e")
          {
-            _currentState = null;
+            _nextState = null;
             return false;
          }
 
@@ -275,7 +275,7 @@ namespace ProgramLogic
                   return false;
 
                case "e":
-                  _currentState = null;
+                  _nextState = null;
                   return false;
 
                case "u":

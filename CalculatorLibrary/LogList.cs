@@ -51,7 +51,7 @@ namespace CalculatorLibrary
       List<CalcLine> _lines = new ();
 
       int _selectedItem;
-      int _indexFrom;
+      int _viewIndex;
       int _posYMin;
       int _posYMax;
 
@@ -145,10 +145,10 @@ namespace CalculatorLibrary
             return;
 
          int count = 0;
-         int x = _lines [_indexFrom].PosX;
-         int y = _lines [_indexFrom].PosY;
+         int x = _lines [_viewIndex].PosX;
+         int y = _lines [_viewIndex].PosY;
 
-         for (int i = _indexFrom; i < _lines.Count; ++i, ++y)
+         for (int i = _viewIndex; i < _lines.Count; ++i, ++y)
          {
             _lines [i].Display ();
             if (++count >= _maxLineCount)
@@ -219,12 +219,14 @@ namespace CalculatorLibrary
 
       void SelectItem ()
       {
-         _lines [_selectedItem].Select ();
+         if (_selectedItem >= 0 && _selectedItem < _lines.Count)
+            _lines [_selectedItem].Select ();
       }
 
       void DeselectItem ()
       {
-         _lines [_selectedItem].Deselect ();
+         if (_selectedItem >= 0 && _selectedItem < _lines.Count)
+            _lines [_selectedItem].Deselect ();
       }
 
       void SelectPrevItem ()
@@ -265,7 +267,7 @@ namespace CalculatorLibrary
          }
 
          _selectedItem = 0;
-         _indexFrom = 0;
+         _viewIndex = 0;
 
          Fill ();
          SelectItem ();
@@ -279,7 +281,7 @@ namespace CalculatorLibrary
             for (int i = _lines.Count - 1; i >= 0; --i)
                _lines [i].PosY = y--;
 
-            _indexFrom = _lines.Count - _maxLineCount;
+            _viewIndex = _lines.Count - _maxLineCount;
          }
 
          _selectedItem = _lines.Count - 1;
@@ -290,7 +292,7 @@ namespace CalculatorLibrary
 
       void ScrollUp ()
       {
-         ++_indexFrom;
+         ++_viewIndex;
          foreach (var data in _lines)
             --data.PosY;
 
@@ -299,7 +301,7 @@ namespace CalculatorLibrary
 
       void ScrollDown ()
       {
-         --_indexFrom;
+         --_viewIndex;
 
          foreach (var data in _lines)
             ++data.PosY;
